@@ -5,81 +5,58 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Network Video Player</title>
   <style>
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: Arial, sans-serif;
-    }
-    #video-player-container {
-      position: relative;
-      width: 100%;
-      height: 100vh;
-      background-color: #000;
-      color: #fff;
+    #video-container {
       display: flex;
-      justify-content: center;
+      flex-direction: column;
       align-items: center;
-    }
-    #video-player {
-      width: 80%;
-    }
-    #audio-track-selector {
-      position: absolute;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: rgba(0, 0, 0, 0.5);
-      padding: 10px;
-      border-radius: 5px;
     }
   </style>
 </head>
 <body>
-  <div id="video-player-container">
+  <div id="video-container">
+    <input type="text" id="video-url" placeholder="Enter video URL">
     <video id="video-player" controls>
       Your browser does not support the video tag.
     </video>
-    <div id="audio-track-selector"></div>
+    <select id="audio-tracks"></select>
+    <button id="change-audio-track">Change Audio Track</button>
   </div>
 
   <script>
     const videoPlayer = document.getElementById('video-player');
-    const audioTrackSelector = document.getElementById('audio-track-selector');
+    const audioTracksSelect = document.getElementById('audio-tracks');
+    const changeAudioTrackBtn = document.getElementById('change-audio-track');
+    const videoUrlInput = document.getElementById('video-url');
 
-    // Step 1: Add video URL text input
-    const videoUrl = prompt("Enter video URL:");
-    videoPlayer.src = videoUrl;
+    videoUrlInput.addEventListener('input', () => {
+      const videoUrl = videoUrlInput.value;
+      videoPlayer.src = videoUrl;
+      videoPlayer.load();
+    });
 
-    // Step 2: Video player with audio track change support
-    videoPlayer.addEventListener('loadedmetadata', function() {
+    videoPlayer.addEventListener('loadedmetadata', () => {
       const audioTracks = videoPlayer.audioTracks;
-      if (audioTracks && audioTracks.length > 1) {
-        audioTrackSelector.innerHTML = '<select id="audio-track-select"></select>';
-        const audioTrackSelect = document.getElementById('audio-track-select');
-        audioTracks.forEach((track, index) => {
-          const option = document.createElement('option');
-          option.value = index;
-          option.textContent = `Audio Track ${index + 1}`;
-          audioTrackSelect.appendChild(option);
-        });
-        audioTrackSelect.addEventListener('change', function() {
-          videoPlayer.audioTracks.selectedIndex = this.value;
-        });
+      audioTracksSelect.innerHTML = '';
+      for (let i = 0; i < audioTracks.length; i++) {
+        const track = audioTracks[i];
+        const option = document.createElement('option');
+        option.textContent = `Audio Track ${i + 1}`;
+        option.value = i;
+        audioTracksSelect.appendChild(option);
       }
     });
 
-    // Step 3: Auto detect audio tracks from video
-    // This is handled in the 'loadedmetadata' event listener
+    changeAudioTrackBtn.addEventListener('click', () => {
+      const selectedIndex = audioTracksSelect.selectedIndex;
+      if (selectedIndex !== -1) {
+        const selectedTrack = audioTracksSelect.options[selectedIndex].value;
+        videoPlayer.audioTracks[selectedTrack].enabled = true;
+      }
+    });
 
-    // Step 4: Design with classic animated background
-    // No specific animated background added, but can be implemented using CSS animations
-
-    // Step 5: Add support for MKV format videos
-    // MKV support depends on the browser's capability. Most modern browsers support it.
-
-    // Step 6: Check your code
-    // The code should be checked for errors and tested thoroughly.
-
+    videoPlayer.addEventListener('error', () => {
+      alert('Error loading the video.');
+    });
   </script>
 </body>
 </html>
