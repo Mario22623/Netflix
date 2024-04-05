@@ -1,62 +1,91 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Network Video Player</title>
-  <style>
-    #video-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-  </style>
+	<title>Network Video Player</title>
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			max-width: 800px;
+			margin: 0 auto;
+		}
+		input[type=text] {
+			width: 100%;
+			padding: 12px 20px;
+			margin: 8px 0;
+			box-sizing: border-box;
+		}
+		video {
+			width: 100%;
+			max-width: 800px;
+			height: auto;
+		}
+	</style>
 </head>
 <body>
-  <div id="video-container">
-    <input type="text" id="video-url" placeholder="Enter video URL">
-    <video id="video-player" controls>
-      Your browser does not support the video tag.
-    </video>
-    <select id="audio-tracks"></select>
-    <button id="change-audio-track">Change Audio Track</button>
-  </div>
+	<h1>Enter video link:</h1>
+	<input type="text" id="videoLink" value="">
+	<video id="videoPlayer" controls>
+		<source id="videoSource" src="" type="video/mp4">
+		Your browser does not support the video tag.
+	</video>
+	<script>
+		const videoPlayer = document.getElementById('videoPlayer');
+		const videoSource = document.getElementById('videoSource');
+		const videoLink = document.getElementById('videoLink');
 
-  <script>
-    const videoPlayer = document.getElementById('video-player');
-    const audioTracksSelect = document.getElementById('audio-tracks');
-    const changeAudioTrackBtn = document.getElementById('change-audio-track');
-    const videoUrlInput = document.getElementById('video-url');
+		videoLink.addEventListener('change', () => {
+			videoSource.src = videoLink.value;
+			videoPlayer.load();
+		});
 
-    videoUrlInput.addEventListener('input', () => {
-      const videoUrl = videoUrlInput.value;
-      videoPlayer.src = videoUrl;
-      videoPlayer.load();
-    });
+		videoPlayer.addEventListener('loadedmetadata', () => {
+			const audioTracks = videoPlayer.audioTracks;
+			for (let i = 0; i < audioTracks.length; i++) {
+				console.log(`Audio track ${i+1}: ${audioTracks[i].language}`);
+			}
+		});
 
-    videoPlayer.addEventListener('loadedmetadata', () => {
-      const audioTracks = videoPlayer.audioTracks;
-      audioTracksSelect.innerHTML = '';
-      for (let i = 0; i < audioTracks.length; i++) {
-        const track = audioTracks[i];
-        const option = document.createElement('option');
-        option.textContent = `Audio Track ${i + 1}`;
-        option.value = i;
-        audioTracksSelect.appendChild(option);
-      }
-    });
+		videoPlayer.addEventListener('canplay', () => {
+			videoPlayer.play();
+		});
 
-    changeAudioTrackBtn.addEventListener('click', () => {
-      const selectedIndex = audioTracksSelect.selectedIndex;
-      if (selectedIndex !== -1) {
-        const selectedTrack = audioTracksSelect.options[selectedIndex].value;
-        videoPlayer.audioTracks[selectedTrack].enabled = true;
-      }
-    });
+		videoPlayer.addEventListener('error', (event) => {
+			console.error(`Video player error: ${event.message}`);
+		});
 
-    videoPlayer.addEventListener('error', () => {
-      alert('Error loading the video.');
-    });
-  </script>
+		// Add support for MKV format videos
+		const mimeType = 'video/x-matroska';
+		if (!MediaSource.isTypeSupported(mimeType)) {
+			console.error(`Unsupported MIME type: ${mimeType}`);
+			return;
+		}
+
+		const mediaSource = new MediaSource();
+		videoSource.src = URL.createObjectURL(mediaSource);
+		mediaSource.addEventListener('sourceopen', () => {
+			const sourceBuffer = mediaSource.addSourceBuffer(mimeType);
+			fetch(videoLink.value)
+				.then((response) => {
+					if (!response.ok) {
+						throw new Error(`HTTP error ${response.status}`);
+					}
+					return response.body;
+				})
+				.then((body) => {
+					const reader = body.getReader();
+					const pump = () => reader.read().then(({value, done}) => {
+						if (done) {
+							return;
+						}
+						sourceBuffer.appendBuffer(value);
+						return pump();
+					});
+					return pump();
+				})
+				.catch((error) => {
+					console.error(`Error loading video: ${error.message}`);
+				});
+		});
+	</script>
 </body>
 </html>
