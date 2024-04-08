@@ -1,91 +1,49 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Network Video Player</title>
-	<style>
-		body {
-			font-family: Arial, sans-serif;
-			max-width: 800px;
-			margin: 0 auto;
-		}
-		input[type=text] {
-			width: 100%;
-			padding: 12px 20px;
-			margin: 8px 0;
-			box-sizing: border-box;
-		}
-		video {
-			width: 100%;
-			max-width: 800px;
-			height: auto;
-		}
-	</style>
+ <title>Web Video Player using VLC</title>
 </head>
 <body>
-	<h1>Enter video link:</h1>
-	<input type="text" id="videoLink" value="">
-	<video id="videoPlayer" controls>
-		<source id="videoSource" src="" type="video/mp4">
-		Your browser does not support the video tag.
-	</video>
-	<script>
-		const videoPlayer = document.getElementById('videoPlayer');
-		const videoSource = document.getElementById('videoSource');
-		const videoLink = document.getElementById('videoLink');
-
-		videoLink.addEventListener('change', () => {
-			videoSource.src = videoLink.value;
-			videoPlayer.load();
-		});
-
-		videoPlayer.addEventListener('loadedmetadata', () => {
-			const audioTracks = videoPlayer.audioTracks;
-			for (let i = 0; i < audioTracks.length; i++) {
-				console.log(`Audio track ${i+1}: ${audioTracks[i].language}`);
-			}
-		});
-
-		videoPlayer.addEventListener('canplay', () => {
-			videoPlayer.play();
-		});
-
-		videoPlayer.addEventListener('error', (event) => {
-			console.error(`Video player error: ${event.message}`);
-		});
-
-		// Add support for MKV format videos
-		const mimeType = 'video/x-matroska';
-		if (!MediaSource.isTypeSupported(mimeType)) {
-			console.error(`Unsupported MIME type: ${mimeType}`);
-			return;
-		}
-
-		const mediaSource = new MediaSource();
-		videoSource.src = URL.createObjectURL(mediaSource);
-		mediaSource.addEventListener('sourceopen', () => {
-			const sourceBuffer = mediaSource.addSourceBuffer(mimeType);
-			fetch(videoLink.value)
-				.then((response) => {
-					if (!response.ok) {
-						throw new Error(`HTTP error ${response.status}`);
-					}
-					return response.body;
-				})
-				.then((body) => {
-					const reader = body.getReader();
-					const pump = () => reader.read().then(({value, done}) => {
-						if (done) {
-							return;
-						}
-						sourceBuffer.appendBuffer(value);
-						return pump();
-					});
-					return pump();
-				})
-				.catch((error) => {
-					console.error(`Error loading video: ${error.message}`);
-				});
-		});
-	</script>
+ <h1>Web Video Player using VLC</h1>
+ <p>Enter the video link:</p>
+ <input type="text" id="videoLink" value="https://example.com/video.mkv">
+ <button onclick="playVideo()">Play</button>
+ <br><br>
+ <object classid="clsid:9BE31822-FDAD-461B-AD51-BE1D1C159921" codebase="http://downloads.videolan.org/pub/videolan/vlc/latest/win32/axvlc.cab" width="640" height="480" id="vlcPlayer">
+  <param name="Src" value="">
+  <param name="Loop" value="no">
+  <param name="AutoLoop" value="no">
+  <param name="AutoPlay" value="yes">
+  <param name="Volume" value="200">
+  <param name="Rate" value="1">
+  <param name="LocationLog" value="no">
+  <embed type="application/x-vlc-plugin" pluginspage="http://www.videolan.org" version="VideoLAN.VLCPlugin.2" width="640" height="480" id="vlcEmbed" loop="no" autoloop="no" autoplay="yes" volume="200" rate="1" locationlog="no" target=""></embed>
+ </object>
+ <br><br>
+ <div id="audioTrack"></div>
+ <script>
+  function playVideo() {
+   var link = document.getElementById("videoLink").value;
+   var player = document.getElementById("vlcPlayer");
+   var embed = document.getElementById("vlcEmbed");
+   player.Src = link;
+   embed.Src = link;
+   // Auto detect audio tracks from video
+   var media = new vlc.MediaPlayer(link);
+   media.audioTracks.then(function(audioTracks) {
+    // Display detected audio track
+    var audioTrackDiv = document.getElementById("audioTrack");
+    audioTrackDiv.innerHTML = "Detected audio track: " + audioTracks[0].name;
+    // Audio track change support
+    media.audioTrack = function() {
+     if (media.audioTrack === audioTracks[0].id) {
+      media.audioTrack = audioTracks[1].id;
+     } else {
+      media.audioTrack = audioTracks[0].id;
+     }
+    };
+   });
+  }
+ </script>
 </body>
 </html>
