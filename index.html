@@ -1,49 +1,61 @@
 <!DOCTYPE html>
 <html>
 <head>
- <title>Web Video Player using VLC</title>
+    <title>Network Web Video Player</title>
+    <link href="https://vjs.zencdn.net/7.10.4/video-js.css" rel="stylesheet">
+    <script src="https://vjs.zencdn.net/7.10.4/video.js"></script>
 </head>
 <body>
- <h1>Web Video Player using VLC</h1>
- <p>Enter the video link:</p>
- <input type="text" id="videoLink" value="https://example.com/video.mkv">
- <button onclick="playVideo()">Play</button>
- <br><br>
- <object classid="clsid:9BE31822-FDAD-461B-AD51-BE1D1C159921" codebase="http://downloads.videolan.org/pub/videolan/vlc/latest/win32/axvlc.cab" width="640" height="480" id="vlcPlayer">
-  <param name="Src" value="">
-  <param name="Loop" value="no">
-  <param name="AutoLoop" value="no">
-  <param name="AutoPlay" value="yes">
-  <param name="Volume" value="200">
-  <param name="Rate" value="1">
-  <param name="LocationLog" value="no">
-  <embed type="application/x-vlc-plugin" pluginspage="http://www.videolan.org" version="VideoLAN.VLCPlugin.2" width="640" height="480" id="vlcEmbed" loop="no" autoloop="no" autoplay="yes" volume="200" rate="1" locationlog="no" target=""></embed>
- </object>
- <br><br>
- <div id="audioTrack"></div>
- <script>
-  function playVideo() {
-   var link = document.getElementById("videoLink").value;
-   var player = document.getElementById("vlcPlayer");
-   var embed = document.getElementById("vlcEmbed");
-   player.Src = link;
-   embed.Src = link;
-   // Auto detect audio tracks from video
-   var media = new vlc.MediaPlayer(link);
-   media.audioTracks.then(function(audioTracks) {
-    // Display detected audio track
-    var audioTrackDiv = document.getElementById("audioTrack");
-    audioTrackDiv.innerHTML = "Detected audio track: " + audioTracks[0].name;
-    // Audio track change support
-    media.audioTrack = function() {
-     if (media.audioTrack === audioTracks[0].id) {
-      media.audioTrack = audioTracks[1].id;
-     } else {
-      media.audioTrack = audioTracks[0].id;
-     }
-    };
-   });
-  }
- </script>
+    <h1>Enter Video Link:</h1>
+    <input type="text" id="videoLink" value="https://example.com/video.mkv">
+    <button onclick="loadVideo()">Load Video</button>
+
+    <video id="myPlayer" class="video-js" controls preload="auto" width="640" height="360" data-setup='{"techOrder": ["flash"]}'>
+        <source id="videoSource" src="" type="video/mkv">
+        <track id="audioTrack" label="English" kind="audio" srclang="en" src="" default>
+    </video>
+
+    <h2>Detected Audio Track:</h2>
+    <p id="audioTrackDisplay"></p>
+
+    <script>
+        var player = videojs('myPlayer');
+
+        function loadVideo() {
+            var videoLink = document.getElementById('videoLink').value;
+            var videoSource = document.getElementById('videoSource');
+            var audioTrack = document.getElementById('audioTrack');
+            var audioTrackDisplay = document.getElementById('audioTrackDisplay');
+
+            // Load video source
+            videoSource.src = videoLink;
+
+            // Auto-detect audio tracks
+            player.src({ src: videoLink, type: "video/mkv" });
+            player.textTracks().forEach(function(track) {
+                if (track.kind === "audio") {
+                    track.mode = "hidden";
+                    audioTrack.label = track.label;
+                    audioTrack.src = track.src;
+                }
+            });
+
+            // Display detected audio track
+            audioTrackDisplay.innerText = audioTrack.label;
+
+            // Audio track change support
+            player.on("trackchange", function() {
+                var currentTrack = player.currentTrack();
+                if (currentTrack && currentTrack.kind === "audio") {
+                    audioTrackDisplay.innerText = currentTrack.label;
+                }
+            });
+        }
+
+        // Initialize video player
+        player.ready(function() {
+            loadVideo();
+        });
+    </script>
 </body>
 </html>
