@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Network Video Player</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .input-group {
+      margin-bottom: 20px;
+    }
+    .input-group label {
+      display: block;
+      margin-bottom: 5px;
+    }
+    .input-group input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+    }
+    .video-player {
+      width: 100%;
+      height: auto;
+    }
+    .audio-tracks {
+      margin-top: 20px;
+    }
+    .audio-tracks label {
+      display: block;
+      margin-bottom: 5px;
+    }
+    .audio-tracks select {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Network Video Player</h1>
+    
+    <div class="input-group">
+      <label for="video-url">Enter Video URL:</label>
+      <input type="text" id="video-url" placeholder="https://example.com/video.mp4">
+      <button id="play-btn">Play</button>
+    </div>
+    
+    <div class="video-player">
+      <video id="video-player" controls></video>
+    </div>
+    
+    <div class="audio-tracks">
+      <label>Audio Tracks:</label>
+      <select id="audio-track-select"></select>
+    </div>
+  </div>
+
+  <script>
+    const videoPlayer = document.getElementById('video-player');
+    const audioTrackSelect = document.getElementById('audio-track-select');
+    const playBtn = document.getElementById('play-btn');
+
+    playBtn.addEventListener('click', () => {
+      const videoUrl = document.getElementById('video-url').value;
+      if (videoUrl) {
+        videoPlayer.src = videoUrl;
+        videoPlayer.load();
+      }
+    });
+
+    videoPlayer.addEventListener('loadedmetadata', () => {
+      const tracks = videoPlayer.textTracks;
+      if (tracks && tracks.length > 0) {
+        audioTrackSelect.innerHTML = '';
+        for (let i = 0; i < tracks.length; i++) {
+          const track = tracks[i];
+          if (track.kind === 'subtitles') continue;
+          const option = document.createElement('option');
+          option.value = i;
+          option.text = track.label || `Track ${i + 1}`;
+          audioTrackSelect.appendChild(option);
+        }
+        audioTrackSelect.addEventListener('change', () => {
+          const selectedTrackIndex = audioTrackSelect.value;
+          videoPlayer.audioTracks.forEach((track, index) => {
+            track.enabled = index === parseInt(selectedTrackIndex);
+          });
+        });
+      }
+    });
+  </script>
+</body>
+</html>
